@@ -5,27 +5,53 @@
 ## Структура
 
 ```
-config/locust.conf        настройки запуска (адрес, пользователи, отчёты)
+EP-1101-django/           тестируемый магазин (git submodule)
+config/locust.conf        настройки запуска (адрес, пользователи)
 src/locust_pr/
   locustfile.py           точка входа, проверка соотношения GET : POST
   web.py                  сценарии веб-интерфейса: GuestUser, BuyerUser
   api.py                  сценарии REST API: ApiUser
   data.py                 генерация тестовых данных (Faker)
 scripts/create_api_users.py  создание учётных записей для API-тестов
+.env.example              переменные окружения (пароль тестовых учётных записей)
 ```
 
 ## Подготовка
 
-1. Запустить магазин: `docker compose up -d` в каталоге `EP-1101-django` (сайт на <http://127.0.0.1>).
-2. Установить зависимости: `uv sync`.
-3. Создать 30 учётных записей `locust_01`…`locust_30` для API (у новых пользователей нет прав на чтение каталога через API):
+1. Склонировать проект вместе с магазином (он подключён как git submodule, подробности о нём в [его README](https://github.com/zumazoy-college/EP-1101-django/blob/main/README.md)):
 
 ```bash
-docker exec -i -e LOCUST_API_PASSWORD=Locust_pass_123 django_app python manage.py shell < scripts/create_api_users.py
+git clone --recurse-submodules https://github.com/zumazoy-college/DOCKER-locust-EP-1101-django.git
 ```
 
+   Если репозиторий уже склонирован без `--recurse-submodules`, папка `EP-1101-django/` будет пустой. Заполнить её: `git submodule update --init`.
+
+1. Создать файл с переменными окружения: `cp .env.example .env`. Значение `LOCUST_API_PASSWORD` задаёт пароль тестовых учётных записей, менять его необязательно.
+2. Запустить магазин (сайт будет на <http://127.0.0.1>):
+
+```bash
+docker network create MS
+cd EP-1101-django
+cp .env.example .env
+docker compose up -d --build
+cd ..
+```
+
+   Сеть `MS` создаётся один раз, если её ещё нет.
+
+4. Установить зависимости: `uv sync`.
+5. Создать 30 учётных записей `locust_01`…`locust_30` для API (у новых пользователей нет прав на чтение каталога через API):
+
+### Bash
+
+```bash
+docker exec -i --env-file .env django_app python manage.py shell < scripts/create_api_users.py
+```
+
+### Powershell
+
 ```powershell
-Get-Content scripts/create_api_users.py -Raw | docker exec -i -e LOCUST_API_PASSWORD=Locust_pass_123 django_app python manage.py shell
+Get-Content scripts/create_api_users.py -Raw | docker exec -i --env-file .env django_app python manage.py shell
 ```
 
 ## Запуск

@@ -1,0 +1,3 @@
+[submodule "EP-1101-django"]
+	path = EP-1101-django
+	url = https://github.com/zumazoy-college/EP-1101-django.git
